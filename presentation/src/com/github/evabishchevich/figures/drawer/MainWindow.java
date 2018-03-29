@@ -18,7 +18,7 @@ import javafx.stage.Stage;
 import java.util.*;
 
 
-public class AwtDrawer extends Application {
+public class MainWindow extends Application {
 
     private static String ELLIPSE = "Ellipse";
     private static String CIRCLE = "Circle";
