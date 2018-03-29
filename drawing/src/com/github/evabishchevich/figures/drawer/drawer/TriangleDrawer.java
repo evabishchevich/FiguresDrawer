@@ -4,16 +4,19 @@ import com.github.evabishchevich.figures.drawer.Point;
 import com.github.evabishchevich.figures.drawer.figures.Triangle;
 import com.github.evabishchevich.figures.drawer.shape.DrawingShape;
 import com.github.evabishchevich.figures.drawer.shape.TriangleShape;
+import javafx.scene.paint.Color;
 
 public class TriangleDrawer implements FxDrawer {
 
     private Triangle triangle;
+    private Color color;
     private boolean drawDown;
 
-    public TriangleDrawer(int x, int y) {
+    public TriangleDrawer(int x, int y, Color color) {
         Point topLeft = new Point(x, y);
         triangle = new Triangle(topLeft, topLeft, topLeft);
         drawDown = System.currentTimeMillis() % 2 == 0;
+        this.color = color;
     }
 
     @Override
@@ -30,6 +33,6 @@ public class TriangleDrawer implements FxDrawer {
             c = new Point(triangle.a.x + diffX, triangle.a.y + diffY);
         }
         triangle = new Triangle(triangle.a, b, c);
-        return new TriangleShape(triangle);
+        return new TriangleShape(triangle, color);
     }
 }

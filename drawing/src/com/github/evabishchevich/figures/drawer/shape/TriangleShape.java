@@ -2,14 +2,17 @@ package com.github.evabishchevich.figures.drawer.shape;
 
 import com.github.evabishchevich.figures.drawer.figures.Triangle;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Shape;
 
 public class TriangleShape implements DrawingShape {
 
     private Triangle triangle;
+    private Color color;
 
-    public TriangleShape(Triangle triangle) {
+    public TriangleShape(Triangle triangle, Color color) {
         this.triangle = triangle;
+        this.color = color;
     }
 
     @Override
@@ -22,14 +25,10 @@ public class TriangleShape implements DrawingShape {
                 triangle.c.x,
                 triangle.c.y
         };
-
-        Shape rawShape =
-                new javafx.scene.shape.Polygon(coordinates);
-
-        rawShape.setFill(Color.GREEN);
+        Shape rawShape = new Polygon(coordinates);
+        rawShape.setFill(color);
         rawShape.setStroke(Color.BLACK);
         rawShape.setStrokeWidth(1.0);
-
         return rawShape;
     }
 }

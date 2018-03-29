@@ -7,16 +7,22 @@ import javafx.scene.shape.Shape;
 public class EllipseShape implements DrawingShape {
 
     private Ellipse ellipse;
+    private Color color;
 
-    public EllipseShape(Ellipse ellipse) {
+    public EllipseShape(Ellipse ellipse, Color color) {
         this.ellipse = ellipse;
+        this.color = color;
     }
 
     @Override
     public Shape getShape() {
-        Shape rawShape =
-                new javafx.scene.shape.Ellipse(ellipse.center.x, ellipse.center.y, ellipse.horizontalRadius, ellipse.verticalRadius);
-        rawShape.setFill(Color.GREEN);
+        Shape rawShape = new javafx.scene.shape.Ellipse(
+                ellipse.center.x,
+                ellipse.center.y,
+                ellipse.horizontalRadius,
+                ellipse.verticalRadius
+        );
+        rawShape.setFill(color);
         rawShape.setStroke(Color.BLACK);
         rawShape.setStrokeWidth(1.0);
         return rawShape;
