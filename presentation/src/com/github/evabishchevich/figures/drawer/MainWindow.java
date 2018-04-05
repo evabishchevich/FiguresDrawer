@@ -15,6 +15,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
+import java.io.*;
 import java.util.*;
 
 
@@ -28,8 +29,11 @@ public class MainWindow extends Application {
     private static String TRIANGLE = "Triangle";
     private static int BUTTON_WIDTH = 100;
 
-    private DrawingPane drawingPane = new DrawingPane(BUTTON_WIDTH);
+    private static String FIGURES_FILENAME = "figures.bin";
+
+    private DrawingPane drawingPane = new DrawingPane(Color.LIGHTCORAL);
     private FxDrawer currentDrawer;
+    private List<FxDrawer> drawers = new ArrayList<>();
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -49,6 +53,7 @@ public class MainWindow extends Application {
             button.setMinWidth(BUTTON_WIDTH);
             buttonsPanel.getChildren().add(button);
         });
+        setUpSaveAndLoadButtons(buttonsPanel);
 
         SplitPane mainLayout = new SplitPane();
         mainLayout.setDividerPositions(Region.USE_COMPUTED_SIZE);
@@ -63,46 +68,27 @@ public class MainWindow extends Application {
     }
 
     private Collection<Button> setUpFiguresButtons() {
-        Color color = Color.AQUA;
         Map<String, Button> buttons = new HashMap<>();
         List<String> buttonNames = Arrays.asList(ELLIPSE, CIRCLE, PARALLELOGRAM, RECTANGLE, SQUARE, TRIANGLE);
         buttonNames.forEach(buttonName -> buttons.put(buttonName, new Button(buttonName)));
         buttons.get(ELLIPSE).setOnMouseClicked(event ->
-                drawingPane.getPane().setOnMousePressed(event1 -> {
-                    currentDrawer = new EllipseDrawer((int) event1.getX(), (int) event1.getY(), color);
-                    new MouseEventAdapter(drawingPane.getPane(), event1);
-                })
+                setMouseAdapter(event1 -> new EllipseDrawer((int) event1.getX(), (int) event1.getY()))
         );
-        buttons.get(CIRCLE).setOnMouseClicked(event -> {
-            drawingPane.getPane().setOnMousePressed(event1 -> {
-                currentDrawer = new CircleDrawer((int) event1.getX(), (int) event1.getY(), color);
-                new MouseEventAdapter(drawingPane.getPane(), event1);
-            });
-        });
-        buttons.get(PARALLELOGRAM).setOnMouseClicked(event -> {
-            drawingPane.getPane().setOnMousePressed(event1 -> {
-                currentDrawer = new ParallelogramDrawer((int) event1.getX(), (int) event1.getY(), color);
-                new MouseEventAdapter(drawingPane.getPane(), event1);
-            });
-        });
-        buttons.get(RECTANGLE).setOnMouseClicked(event -> {
-            drawingPane.getPane().setOnMousePressed(event1 -> {
-                currentDrawer = new RectangleDrawer((int) event1.getX(), (int) event1.getY(), color);
-                new MouseEventAdapter(drawingPane.getPane(), event1);
-            });
-        });
-        buttons.get(SQUARE).setOnMouseClicked(event -> {
-            drawingPane.getPane().setOnMousePressed(event1 -> {
-                currentDrawer = new SquareDrawer((int) event1.getX(), (int) event1.getY(), color);
-                new MouseEventAdapter(drawingPane.getPane(), event1);
-            });
-        });
-        buttons.get(TRIANGLE).setOnMouseClicked(event -> {
-            drawingPane.getPane().setOnMousePressed(event1 -> {
-                currentDrawer = new TriangleDrawer((int) event1.getX(), (int) event1.getY(), color);
-                new MouseEventAdapter(drawingPane.getPane(), event1);
-            });
-        });
+        buttons.get(CIRCLE).setOnMouseClicked(event ->
+                setMouseAdapter(event1 -> new CircleDrawer((int) event1.getX(), (int) event1.getY()))
+        );
+        buttons.get(PARALLELOGRAM).setOnMouseClicked(event ->
+                setMouseAdapter(event1 -> new ParallelogramDrawer((int) event1.getX(), (int) event1.getY()))
+        );
+        buttons.get(RECTANGLE).setOnMouseClicked(event ->
+                setMouseAdapter(event1 -> new RectangleDrawer((int) event1.getX(), (int) event1.getY()))
+        );
+        buttons.get(SQUARE).setOnMouseClicked(event ->
+                setMouseAdapter(event1 -> new SquareDrawer((int) event1.getX(), (int) event1.getY()))
+        );
+        buttons.get(TRIANGLE).setOnMouseClicked(event ->
+                setMouseAdapter(event1 -> new TriangleDrawer((int) event1.getX(), (int) event1.getY()))
+        );
         return buttons.values();
     }
 
@@ -112,6 +98,49 @@ public class MainWindow extends Application {
         buttonsPanel.setPadding(new Insets(20));
         buttonsPanel.setSpacing(10);
         return buttonsPanel;
+    }
+
+    private void setUpSaveAndLoadButtons(VBox buttonsPanel) {
+        Button saveButton = new Button("Save");
+        Button loadButton = new Button("Load");
+        saveButton.setOnMouseClicked(event -> saveToFile());
+        loadButton.setOnMouseClicked(event -> loadFromFile());
+        buttonsPanel.getChildren().addAll(new Separator(), saveButton, loadButton);
+    }
+
+    private void saveToFile() {
+        try {
+            FileOutputStream fileOut = new FileOutputStream(FIGURES_FILENAME);
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(drawers);
+            out.close();
+            fileOut.close();
+            System.out.println("Figures saved to " + FIGURES_FILENAME);
+        } catch (IOException e) {
+            System.out.println("Error: " + e.toString());
+        }
+    }
+
+    private void loadFromFile() {
+        try {
+            FileInputStream fileIn = new FileInputStream(FIGURES_FILENAME);
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            drawers = (ArrayList<FxDrawer>) in.readObject();
+            in.close();
+            fileIn.close();
+            System.out.println("Figures read from " + FIGURES_FILENAME);
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Error: " + e.toString());
+        }
+        drawers.forEach(fxDrawer -> draw(fxDrawer.getShape()));
+    }
+
+    private void setMouseAdapter(Function2<MouseEvent, FxDrawer> drawerCreation) {
+        drawingPane.getPane().setOnMousePressed(event1 -> {
+            currentDrawer = drawerCreation.apply(event1);
+            drawers.add(currentDrawer);
+            new MouseEventAdapter(drawingPane.getPane(), event1);
+        });
     }
 
     private void draw(DrawingShape shape) {
@@ -134,6 +163,12 @@ public class MainWindow extends Application {
                 });
             }
         }
+    }
+
+    @FunctionalInterface
+    interface Function2<E, R> {
+
+        R apply(E e);
     }
 
     public static void main(String[] args) {

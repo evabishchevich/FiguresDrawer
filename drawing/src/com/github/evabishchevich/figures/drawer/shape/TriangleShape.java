@@ -8,11 +8,9 @@ import javafx.scene.shape.Shape;
 public class TriangleShape implements DrawingShape {
 
     private Triangle triangle;
-    private Color color;
 
-    public TriangleShape(Triangle triangle, Color color) {
+    public TriangleShape(Triangle triangle) {
         this.triangle = triangle;
-        this.color = color;
     }
 
     @Override
@@ -26,7 +24,6 @@ public class TriangleShape implements DrawingShape {
                 triangle.c.y
         };
         Shape rawShape = new Polygon(coordinates);
-        rawShape.setFill(color);
         rawShape.setStroke(Color.BLACK);
         rawShape.setStrokeWidth(1.0);
         return rawShape;

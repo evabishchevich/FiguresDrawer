@@ -8,11 +8,9 @@ import javafx.scene.shape.Shape;
 public class ParallelogramShape implements DrawingShape {
 
     private Parallelogram parallelogram;
-    private Color color;
 
-    public ParallelogramShape(Parallelogram parallelogram, Color color) {
+    public ParallelogramShape(Parallelogram parallelogram) {
         this.parallelogram = parallelogram;
-        this.color = color;
     }
 
     @Override
@@ -28,7 +26,6 @@ public class ParallelogramShape implements DrawingShape {
                 parallelogram.point4.y
         };
         Shape rawShape = new Polygon(coordinates);
-        rawShape.setFill(color);
         rawShape.setStroke(Color.BLACK);
         rawShape.setStrokeWidth(1.0);
         return rawShape;

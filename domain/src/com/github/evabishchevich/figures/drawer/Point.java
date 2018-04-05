@@ -1,7 +1,9 @@
 package com.github.evabishchevich.figures.drawer;
 
 
-public final class Point {
+import java.io.Serializable;
+
+public final class Point implements Serializable {
 
     public final int x;
     public final int y;

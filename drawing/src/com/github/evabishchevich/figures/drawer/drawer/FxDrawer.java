@@ -2,7 +2,11 @@ package com.github.evabishchevich.figures.drawer.drawer;
 
 import com.github.evabishchevich.figures.drawer.shape.DrawingShape;
 
-public interface FxDrawer {
+import java.io.Serializable;
+
+public interface FxDrawer extends Serializable {
 
     DrawingShape processCursorPosition(int x, int y);
+
+    DrawingShape getShape();
 }

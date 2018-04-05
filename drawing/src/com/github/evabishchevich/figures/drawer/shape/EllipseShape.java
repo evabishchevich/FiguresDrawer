@@ -7,11 +7,9 @@ import javafx.scene.shape.Shape;
 public class EllipseShape implements DrawingShape {
 
     private Ellipse ellipse;
-    private Color color;
 
-    public EllipseShape(Ellipse ellipse, Color color) {
+    public EllipseShape(Ellipse ellipse) {
         this.ellipse = ellipse;
-        this.color = color;
     }
 
     @Override
@@ -22,7 +20,6 @@ public class EllipseShape implements DrawingShape {
                 ellipse.horizontalRadius,
                 ellipse.verticalRadius
         );
-        rawShape.setFill(color);
         rawShape.setStroke(Color.BLACK);
         rawShape.setStrokeWidth(1.0);
         return rawShape;
