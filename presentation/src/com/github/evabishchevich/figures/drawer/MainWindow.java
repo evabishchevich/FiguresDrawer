@@ -1,13 +1,13 @@
 package com.github.evabishchevich.figures.drawer;
 
 import com.github.evabishchevich.figures.drawer.drawer.*;
+import com.github.evabishchevich.figures.drawer.extension.DrawingPlugin;
+import com.github.evabishchevich.figures.drawer.extension.LoadingPlugin;
 import com.github.evabishchevich.figures.drawer.shape.DrawingShape;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Separator;
-import javafx.scene.control.SplitPane;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -32,7 +32,6 @@ public class MainWindow extends Application {
     private static String RECTANGLE = "Rectangle";
     private static String SQUARE = "Square";
     private static String TRIANGLE = "Triangle";
-    private static String EXTRA = "EXTRA";
     private static int BUTTON_WIDTH = 100;
 
     private static String FIGURES_FILENAME = "figures.bin";
@@ -42,6 +41,9 @@ public class MainWindow extends Application {
     private VBox buttonsPanel = setUpButtonsPanel();
     private FxDrawer currentDrawer;
     private List<FxDrawer> drawers = new ArrayList<>();
+    private List<LoadingPlugin> loadingPlugins = new ArrayList<>();
+    private LoadingPlugin loadingPlugin;
+    private ToggleGroup pluginsToggle = new ToggleGroup();
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -80,7 +82,7 @@ public class MainWindow extends Application {
 
     private Collection<Button> setUpFiguresButtons() {
         Map<String, Button> buttons = new HashMap<>();
-        List<String> buttonNames = Arrays.asList(ELLIPSE, CIRCLE, PARALLELOGRAM, RECTANGLE, SQUARE, TRIANGLE, EXTRA);
+        List<String> buttonNames = Arrays.asList(ELLIPSE, CIRCLE, PARALLELOGRAM, RECTANGLE, SQUARE, TRIANGLE);
         buttonNames.forEach(buttonName -> buttons.put(buttonName, new Button(buttonName)));
         buttons.get(ELLIPSE).setOnMouseClicked(event ->
                 setMouseAdapter(event1 -> new EllipseDrawer((int) event1.getX(), (int) event1.getY()))
@@ -121,10 +123,17 @@ public class MainWindow extends Application {
 
     private void saveToFile() {
         try {
-            FileOutputStream fileOut = new FileOutputStream(FIGURES_FILENAME);
-            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream out = new ObjectOutputStream(baos);
             out.writeObject(drawers);
             out.close();
+            OutputStream fileOut = new FileOutputStream(FIGURES_FILENAME);
+            ByteArrayInputStream bios = new ByteArrayInputStream(baos.toByteArray());
+            if (loadingPlugin != null) {
+                loadingPlugin.save(bios, fileOut);
+            }
+            baos.close();
+            bios.close();
             fileOut.close();
             System.out.println("Figures saved to " + FIGURES_FILENAME);
         } catch (IOException e) {
@@ -133,12 +142,17 @@ public class MainWindow extends Application {
     }
 
     private void loadFromFile(boolean firstLoad) {
-        FileInputStream fileIn = null;
+        InputStream fileIn = null;
         ObjectInputStream in = null;
         boolean reloadWithPlugins = false;
         try {
             fileIn = new FileInputStream(FIGURES_FILENAME);
-            in = new ObjectInputStream(fileIn);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            if (loadingPlugin != null) {
+                loadingPlugin.load(fileIn, baos);
+            }
+            ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
+            in = new ObjectInputStream(bis);
             drawers = (ArrayList<FxDrawer>) in.readObject();
             System.out.println("Figures read from " + FIGURES_FILENAME);
         } catch (IOException | ClassNotFoundException e) {
@@ -186,10 +200,14 @@ public class MainWindow extends Application {
                         String className = je.getName().substring(0, je.getName().length() - 6);
                         className = className.replace('/', '.');
                         Class c = cl.loadClass(className);
-                        if (className.contains("Plugin")) {
-                            processPlugin((DrawingPlugin) c.getConstructor().newInstance());
+                        if (className.contains(DrawingPlugin.class.getSimpleName())) {
+                            processDrawingPlugin((DrawingPlugin) c.getConstructor().newInstance());
+                        }
+                        if (className.contains(LoadingPlugin.class.getSimpleName())) {
+                            processLoadingPlugin((LoadingPlugin) c.getConstructor().newInstance());
                         }
                     }
+                    Thread.currentThread().setContextClassLoader(cl);
                 } catch (IOException
                         | ClassNotFoundException
                         | IllegalAccessException
@@ -203,12 +221,30 @@ public class MainWindow extends Application {
         }
     }
 
-    private void processPlugin(DrawingPlugin plugin) {
+    private void processDrawingPlugin(DrawingPlugin plugin) {
         Button extraButton = new Button(plugin.getName());
         extraButton.setOnMouseClicked(event ->
                 setMouseAdapter(event1 -> plugin.getDrawer((int) event1.getX(), (int) event1.getY()))
         );
         buttonsPanel.getChildren().add(extraButton);
+    }
+
+    private void processLoadingPlugin(LoadingPlugin plugin) {
+        for (LoadingPlugin p : loadingPlugins) {
+            if (p.getName().equals(plugin.getName())) {
+                return;
+            }
+        }
+        loadingPlugins.add(plugin);
+        RadioButton button = new RadioButton(plugin.getName());
+        button.setOnAction(value -> {
+                    if (button.isSelected()) {
+                        loadingPlugin = plugin;
+                    }
+                }
+        );
+        button.setToggleGroup(pluginsToggle);
+        buttonsPanel.getChildren().add(button);
     }
 
     private void setMouseAdapter(Function2<MouseEvent, FxDrawer> drawerCreation) {

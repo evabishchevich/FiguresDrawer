@@ -1,4 +1,4 @@
-package com.github.evabishchevich.figures.drawer;
+package com.github.evabishchevich.figures.drawer.extension;
 
 import com.github.evabishchevich.figures.drawer.drawer.FxDrawer;
 

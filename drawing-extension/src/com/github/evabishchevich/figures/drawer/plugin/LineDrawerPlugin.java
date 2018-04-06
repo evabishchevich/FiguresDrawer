@@ -1,7 +1,7 @@
 package com.github.evabishchevich.figures.drawer.plugin;
 
-import com.github.evabishchevich.figures.drawer.DrawingPlugin;
 import com.github.evabishchevich.figures.drawer.drawer.FxDrawer;
+import com.github.evabishchevich.figures.drawer.extension.DrawingPlugin;
 
 public class LineDrawerPlugin implements DrawingPlugin {
 
