@@ -16,12 +16,8 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.*;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import java.util.function.Function;
 
 
 public class MainWindow extends Application {
@@ -35,7 +31,7 @@ public class MainWindow extends Application {
     private static int BUTTON_WIDTH = 100;
 
     private static String FIGURES_FILENAME = "figures.bin";
-    private static String PLUGINS_DIR = "out/artifacts/";
+
 
     private DrawingPane drawingPane = new DrawingPane(Color.LIGHTCORAL);
     private VBox buttonsPanel = setUpButtonsPanel();
@@ -44,6 +40,15 @@ public class MainWindow extends Application {
     private List<LoadingPlugin> loadingPlugins = new ArrayList<>();
     private LoadingPlugin loadingPlugin;
     private ToggleGroup pluginsToggle = new ToggleGroup();
+    private PluginsLoader pluginsLoader = new PluginsLoader(
+            drawingPlugin -> {
+                processDrawingPlugin(drawingPlugin);
+                return null;
+            },
+            plugin -> {
+                processLoadingPlugin(plugin);
+                return null;
+            });
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -182,43 +187,7 @@ public class MainWindow extends Application {
     }
 
     private void loadPlugins() {
-        File pluginsFolder = new File(PLUGINS_DIR);
-        File[] jars = pluginsFolder.listFiles(file -> file.isFile() && file.getName().endsWith(".jar"));
-        if (jars != null) {
-            for (File file : jars) {
-                try {
-                    JarFile jarFile = new JarFile(file.getAbsolutePath());
-                    Enumeration<JarEntry> e = jarFile.entries();
-                    URL[] urls = {new URL("jar:file:" + file.getAbsolutePath() + "!/")};
-                    URLClassLoader cl = URLClassLoader.newInstance(urls);
-                    while (e.hasMoreElements()) {
-                        JarEntry je = e.nextElement();
-                        if (je.isDirectory() || !je.getName().endsWith(".class")) {
-                            continue;
-                        }
-                        // -6 because of .class
-                        String className = je.getName().substring(0, je.getName().length() - 6);
-                        className = className.replace('/', '.');
-                        Class c = cl.loadClass(className);
-                        if (className.contains(DrawingPlugin.class.getSimpleName())) {
-                            processDrawingPlugin((DrawingPlugin) c.getConstructor().newInstance());
-                        }
-                        if (className.contains(LoadingPlugin.class.getSimpleName())) {
-                            processLoadingPlugin((LoadingPlugin) c.getConstructor().newInstance());
-                        }
-                    }
-                    Thread.currentThread().setContextClassLoader(cl);
-                } catch (IOException
-                        | ClassNotFoundException
-                        | IllegalAccessException
-                        | InstantiationException
-                        | NoSuchMethodException
-                        | InvocationTargetException
-                        e1) {
-                    System.out.println("Error: " + e1.toString());
-                }
-            }
-        }
+        pluginsLoader.loadPlugins();
     }
 
     private void processDrawingPlugin(DrawingPlugin plugin) {
@@ -247,7 +216,7 @@ public class MainWindow extends Application {
         buttonsPanel.getChildren().add(button);
     }
 
-    private void setMouseAdapter(Function2<MouseEvent, FxDrawer> drawerCreation) {
+    private void setMouseAdapter(Function<MouseEvent, FxDrawer> drawerCreation) {
         drawingPane.getPane().setOnMousePressed(event1 -> {
             currentDrawer = drawerCreation.apply(event1);
             drawers.add(currentDrawer);
@@ -275,12 +244,6 @@ public class MainWindow extends Application {
                 });
             }
         }
-    }
-
-    @FunctionalInterface
-    interface Function2<E, R> {
-
-        R apply(E e);
     }
 
     public static void main(String[] args) {
