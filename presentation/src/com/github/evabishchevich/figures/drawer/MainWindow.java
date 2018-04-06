@@ -15,7 +15,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-import java.io.*;
 import java.util.*;
 import java.util.function.Function;
 
@@ -49,6 +48,7 @@ public class MainWindow extends Application {
                 processLoadingPlugin(plugin);
                 return null;
             });
+    private DrawersSerializer serializer = new DrawersSerializer();
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -127,55 +127,12 @@ public class MainWindow extends Application {
     }
 
     private void saveToFile() {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream out = new ObjectOutputStream(baos);
-            out.writeObject(drawers);
-            out.close();
-            OutputStream fileOut = new FileOutputStream(FIGURES_FILENAME);
-            ByteArrayInputStream bios = new ByteArrayInputStream(baos.toByteArray());
-            if (loadingPlugin != null) {
-                loadingPlugin.save(bios, fileOut);
-            }
-            baos.close();
-            bios.close();
-            fileOut.close();
-            System.out.println("Figures saved to " + FIGURES_FILENAME);
-        } catch (IOException e) {
-            System.out.println("Error: " + e.toString());
-        }
+        serializer.saveToFile(FIGURES_FILENAME, drawers, loadingPlugin);
     }
 
     private void loadFromFile(boolean firstLoad) {
-        InputStream fileIn = null;
-        ObjectInputStream in = null;
-        boolean reloadWithPlugins = false;
-        try {
-            fileIn = new FileInputStream(FIGURES_FILENAME);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            if (loadingPlugin != null) {
-                loadingPlugin.load(fileIn, baos);
-            }
-            ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
-            in = new ObjectInputStream(bis);
-            drawers = (ArrayList<FxDrawer>) in.readObject();
-            System.out.println("Figures read from " + FIGURES_FILENAME);
-        } catch (IOException | ClassNotFoundException e) {
-            System.out.println("Error: " + e.toString());
-            reloadWithPlugins = true;
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-                if (fileIn != null) {
-                    fileIn.close();
-                }
-            } catch (IOException e) {
-                System.out.println("Error: " + e.toString());
-            }
-        }
-        if (reloadWithPlugins && firstLoad) {
+        drawers = serializer.loadFromFile(FIGURES_FILENAME, loadingPlugin);
+        if (drawers.isEmpty() && firstLoad) {
             loadFromFileWithPlugins();
         }
         drawers.forEach(fxDrawer -> draw(fxDrawer.getShape()));
