@@ -1,1 +1,1 @@
-This is a project about figures drawing.
+This is a project about figures drawing. Created as a university labwork project.
